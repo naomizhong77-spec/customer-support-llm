@@ -1,7 +1,7 @@
 # Customer Support LLM — Project Context
 
 > This file is the **single source of truth** for this project. Every Claude Code session reads this first.
-> Last updated: 2026-04-17
+> Last updated: 2026-04-17 (category count corrected from 10 → 11 after EDA)
 
 ---
 
@@ -72,7 +72,7 @@ Every training run must produce:
 ### Dataset
 - **Source**: Bitext Customer Support LLM Chatbot Training Dataset (Kaggle)
 - **Size**: ~27,000 English customer support exchanges
-- **Labels**: 10 categories × 27 intents (hierarchical)
+- **Labels**: 11 categories × 27 intents (hierarchical; verified in notebook 01)
 - **Split**: train 75% / val 10% / test 15%
 
 ### Three-Model Comparison
