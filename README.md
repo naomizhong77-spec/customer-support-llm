@@ -23,7 +23,7 @@ _[To be filled in after experiments. Placeholder structure:]_
 
 ## 🧰 Stack
 
-- **Data**: [Bitext Customer Support dataset](https://www.kaggle.com/datasets/bitext/bitext-gen-ai-chatbot-customer-support-dataset) (~27k English tickets, 27 intents × 10 categories)
+- **Data**: [Bitext Customer Support dataset](https://www.kaggle.com/datasets/bitext/bitext-gen-ai-chatbot-customer-support-dataset) (~27k English tickets, 27 intents × 11 categories)
 - **Traditional ML**: scikit-learn
 - **Deep Learning**: HuggingFace Transformers (DistilBERT)
 - **LLM Fine-tuning**: Unsloth + PEFT (Qwen2.5-7B with 4-bit QLoRA)
@@ -124,11 +124,24 @@ kaggle datasets download -d bitext/bitext-gen-ai-chatbot-customer-support-datase
 
 ### 3. Data Preparation
 
+The canonical **test set** is committed (`data/processed/test.parquet` and
+`data/instruction/test.jsonl`) so that all three models are evaluated on the
+exact same examples. The **train and validation splits are NOT tracked in
+git** — they are regenerated deterministically by running notebook 02
+end-to-end with `seed=42`:
+
 ```bash
 jupyter nbconvert --to notebook --execute notebooks/01_data_exploration.ipynb
 jupyter nbconvert --to notebook --execute notebooks/02_data_cleaning.ipynb
-python scripts/prepare_instruction_data.py
+# notebook 02 writes data/processed/{train,val,test}.parquet and also
+# invokes scripts/prepare_instruction_data.py which produces
+# data/instruction/{train,val,test}.jsonl
 ```
+
+Run these before any training. The cleaning pipeline (defect injection →
+deterministic cleaning → stratified split) is audit-logged to
+`outputs/metrics/data_stats.json` so you can verify your regenerated splits
+match the reference commit hash stored there.
 
 ### 4. Train Models
 
