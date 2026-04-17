@@ -33,17 +33,28 @@ Each entry should capture:
 - **Manual interventions**: Clarified GPU (A40 not H40), cluster partition, time budget
 - **Lesson**: Verify hardware details upfront with `scontrol show node` and `nvidia-smi`, don't assume
 
-### Entry 1.2 — Configuration scaffolding
+### Entry 1.2 — Configuration scaffolding + environment debugging
 
 - **Date**: 2026-04-17
-- **Tool**: Claude (web chat) for generation, Claude Code for local execution
-- **Task**: Generate CLAUDE.md, 4 agent files, 4 skill files, README, requirements.txt
-- **Prompt quality**: High — I provided constraints (A40, 6h limit, single user, code-must-validate rule)
-- **AI output quality**: _[fill in after use]_
-- **Iterations**: _[fill in]_
-- **Manual interventions**: _[fill in]_
-- **Lesson**: _[fill in]_
-
+- **Tool**: Claude (web chat, Opus 4.7) for generation, VS Code Remote-SSH for execution
+- **Task**: Generate CLAUDE.md, 4 agent files, 4 skill files, README, requirements.txt; then set up conda env with torch 2.4.1 + Unsloth + HF stack on CCDS-TC2 cluster
+- **Prompt quality**: High — provided hard constraints upfront (A40 48GB, 6h SLURM limit, single-user, "code must validate before commit" rule)
+- **AI output quality**: 4/5 for scaffolding (structure was excellent), 3/5 for the initial install command (used `git+https://unsloth main` which broke on real torch 2.4.1)
+- **Iterations**: ~8 rounds through environment debugging
+- **Manual interventions**:
+  - GPU confirmed as A40 (not H40 as initially assumed)
+  - `srun --pty bash` interactive sessions die when VS Code terminal tab loses focus — had to re-request GPU session 3 times
+  - Unsloth `git+https` main branch pulled `unsloth_zoo==2026.x` with `torch._inductor.config` and `torch.int1` dependencies requiring torch≥2.6 — cascading `AttributeError` chain
+  - Solution: pin `unsloth==2024.12.12` + `unsloth_zoo==2024.12.7` + `--no-deps` for transformers/peft/trl stack
+  - `--no-deps` left `tokenizers==0.22.2` and `huggingface-hub==1.11.0` unresolved (transformers 4.46 requires `<0.21` and `<1.0` respectively) — fixed with two follow-up `--no-deps` installs
+  - `unsloth==2024.12.12` does not support Qwen2.5-0.5B/1.5B in its model whitelist — had to skip straight to Qwen2.5-7B for smoke test (still works since 4-bit load is only ~5GB)
+  - `source ~/.bashrc` in SLURM scripts unreliable on CCDS-TC2 — had to use explicit `$CONDA_BASE/etc/profile.d/conda.sh` sourcing
+- **Lesson**:
+  - **Never use `git+https` for Python packages in production** — the Unsloth team publishes PyPI releases with compatible pinned sibling deps; the main branch is a moving target
+  - `--no-deps` is a useful escape hatch when pip's resolver does the wrong thing, but you **have to manually clean up version tails** that the original package's metadata specified (tokenizers, hf-hub in this case)
+  - **Every HPC cluster has environment quirks** that documentation won't tell you — plan for 30-60 min of environment setup pain per new node/user
+  - **Model whitelists matter**: Unsloth's 2024.12 version doesn't know about newer small Qwen variants; always verify supported models before choosing smoke-test size
+- **PM insight**: This entire ordeal is exactly the kind of integration-layer fragility that makes LLM tooling products hard to ship. The "2x faster training!" value prop from Unsloth is real, but if the installation is a 30-minute debug session for anyone outside their reference environment, the DX tax eats the productivity gain for new users. A product insight for AI infra tooling: **version compatibility matrices + copy-paste install commands that actually work** are a more valuable feature than raw performance.
 ---
 
 ## Phase 2: Data Preparation (Apr 18-19)

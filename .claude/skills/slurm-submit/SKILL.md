@@ -69,7 +69,9 @@ Save as `slurm/train_xxx.sh`:
 set -euo pipefail   # exit on error, undefined var, pipe failure
 
 # === Environment setup ===
-source ~/.bashrc
+# Robust conda activation (works even if ~/.bashrc doesn't init conda)
+CONDA_BASE=$(conda info --base 2>/dev/null || echo "$HOME/.conda")
+source "$CONDA_BASE/etc/profile.d/conda.sh"
 conda activate customer-support-llm
 
 # === Logging ===
@@ -138,7 +140,9 @@ Save as `slurm/cpu_job.sh`:
 #SBATCH --error=logs/%x_%j.err
 
 set -euo pipefail
-source ~/.bashrc
+# Robust conda activation (works even if ~/.bashrc doesn't init conda)
+CONDA_BASE=$(conda info --base 2>/dev/null || echo "$HOME/.conda")
+source "$CONDA_BASE/etc/profile.d/conda.sh"
 conda activate customer-support-llm
 
 cd ~/customer-support-llm
@@ -196,7 +200,7 @@ Usually means the script errored out. Check logs:
 cat logs/train_xxx_JOBID.err
 ```
 Common causes:
-- `conda: command not found` → missing `source ~/.bashrc`
+- `conda: command not found` → use the robust activation snippet (source `$CONDA_BASE/etc/profile.d/conda.sh` explicitly, don't rely on `~/.bashrc`)
 - `ModuleNotFoundError` → wrong conda env, not activated
 - `CUDA_ERROR_INITIALIZATION_FAILED` → driver/CUDA version issue
 - `python: not found` → env activation failed silently

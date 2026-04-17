@@ -106,7 +106,9 @@ Use this baseline for every submission:
 set -euo pipefail
 
 # Activate environment
-source ~/.bashrc
+# Robust conda activation (works even if ~/.bashrc doesn't init conda)
+CONDA_BASE=$(conda info --base 2>/dev/null || echo "$HOME/.conda")
+source "$CONDA_BASE/etc/profile.d/conda.sh"
 conda activate customer-support-llm
 
 # Log environment

@@ -18,14 +18,57 @@ description: Use this skill whenever working on LoRA or QLoRA fine-tuning of LLM
 
 ## Installation
 
-```bash
-# Primary (Unsloth)
-pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cu121
-pip install "unsloth[cu121-torch240] @ git+https://github.com/unslothai/unsloth.git"
-pip install transformers==4.46.0 datasets==3.0.0 accelerate==1.0.0 peft==0.13.0 trl==0.11.0 bitsandbytes==0.44.0
+**⚠️ Lesson learned (Apr 17, 2026)**: Do NOT use `git+https://github.com/unslothai/unsloth.git` — the main branch pulls `unsloth_zoo` at 2026 versions which require torch≥2.6 (incompatible with our torch==2.4.1). Use pinned PyPI versions instead, plus `--no-deps` to prevent pip from reverse-upgrading sibling dependencies.
 
-# If Unsloth fails, fallback stays functional (already installed above):
-# just use from peft import LoraConfig, get_peft_model
+### Verified install sequence for torch 2.4.1 + CUDA 12.1 + A40:
+
+```bash
+# Step 1: torch (cu121 wheel)
+pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cu121
+
+# Step 2: Unsloth — PINNED version, NOT git main
+pip install "unsloth==2024.12.12" "unsloth_zoo==2024.12.7" --no-deps
+
+# Step 3: the training stack — use --no-deps to avoid reverse-upgrades
+pip install --no-deps \
+  transformers==4.46.0 \
+  trl==0.11.0 \
+  peft==0.13.0 \
+  accelerate==1.0.0 \
+  bitsandbytes==0.44.0 \
+  datasets==3.0.0
+
+# Step 4: Unsloth's own runtime deps that --no-deps may skip
+pip install "xformers==0.0.28.post1" "triton>=3.0.0,<3.1.0"
+
+# Step 5: Fix version "tails" left by --no-deps (the transformers 4.46 constraint)
+pip install --no-deps "tokenizers>=0.20,<0.21" "huggingface-hub>=0.23.2,<1.0"
+
+# Step 6: Verify
+python -c "from unsloth import FastLanguageModel; print('unsloth import OK')"
+# Expected: two Unsloth banners + 'unsloth import OK' with no traceback
+```
+
+### Models supported by unsloth==2024.12.12
+
+This version's model whitelist **includes Qwen2.5-7B-Instruct** (our target) but does **NOT** include Qwen2.5-0.5B or 1.5B. For smoke tests, load the 7B variant directly — with 4-bit quantization it only needs ~5GB VRAM at load time, well within A40's 48GB budget.
+
+### If anything breaks
+
+- `AttributeError: module 'torch._inductor' has no attribute 'config'` → your `unsloth_zoo` is too new. Reinstall with pinned version.
+- `AttributeError: module 'torch' has no attribute 'int1'` → `torchao` was pulled by `transformers` 5.x. Uninstall torchao: `pip uninstall -y torchao`.
+- `ImportError: tokenizers>=0.20,<0.21 is required` → run Step 5 above.
+- `ImportError: huggingface-hub>=0.23.2,<1.0 is required` → run Step 5 above.
+- `NotImplementedError: ... not supported in your current Unsloth version` → model not in 2024.12 whitelist. Use Qwen2.5-7B-Instruct or Qwen2.5-3B-Instruct (both supported).
+
+### Fallback (if Unsloth still breaks)
+
+Skip Unsloth entirely, use Transformers + PEFT:
+
+```python
+from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+from peft import LoraConfig, get_peft_model
+# LoRA config in configs/qwen_lora_config.yaml is directly compatible
 ```
 
 ## Memory Budget for A40 (48GB)
