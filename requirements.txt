@@ -1,0 +1,49 @@
+# Core ML stack
+# Install torch separately first:
+#   pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cu121
+
+transformers==4.46.0
+datasets==3.0.0
+accelerate==1.0.0
+peft==0.13.0
+trl==0.11.0
+bitsandbytes==0.44.0
+
+# Unsloth - install with:
+#   pip install "unsloth[cu121-torch240] @ git+https://github.com/unslothai/unsloth.git"
+# (Can't be in requirements.txt because of the git+url syntax constraints)
+
+# Data / numerical
+pandas>=2.1.0
+numpy>=1.26.0,<2.0
+pyarrow>=14.0.0          # parquet support
+scikit-learn>=1.4.0
+scipy>=1.11.0
+
+# Visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# Notebook
+jupyter>=1.0.0
+jupyterlab>=4.0.0
+ipykernel>=6.29.0
+ipywidgets>=8.1.0
+
+# Data download
+kaggle>=1.6.0
+
+# Config
+pyyaml>=6.0
+jsonschema>=4.20.0
+
+# Dev tools (validation)
+ruff>=0.6.0
+pyflakes>=3.2.0
+
+# Progress bars + utilities
+tqdm>=4.66.0
+rich>=13.7.0              # nice console output
+
+# Report generation
+# (pandoc is a system dep, install via conda or apt)

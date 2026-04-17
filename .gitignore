@@ -1,0 +1,76 @@
+# Data files (raw dataset is external, processed regeneratable)
+data/raw/
+data/processed/*.parquet
+data/instruction/*.jsonl
+
+# Model checkpoints
+checkpoints/
+*.ckpt
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Logs
+logs/
+*.log
+*.out
+*.err
+
+# Large outputs
+outputs/error_analysis/*.csv
+outputs/figures/*_large.png
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+wheels/
+pip-wheel-metadata/
+
+# Virtual environments
+venv/
+env/
+.env
+.venv
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Secrets
+.env
+*.key
+*.pem
+kaggle.json
+.cache/
+
+# Pandoc intermediate
+*.aux
+*.toc
+*.lof
+*.lot
+
+# SLURM
+slurm-*.out
+
+# HuggingFace cache
+.cache/huggingface/
+models--*/
+
+# Weights & Biases
+wandb/
