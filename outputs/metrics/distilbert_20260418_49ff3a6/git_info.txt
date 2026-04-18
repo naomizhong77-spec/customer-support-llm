@@ -1,0 +1,6 @@
+commit: 49ff3a6
+timestamp: 2026-04-18T07:21:24.126230+00:00
+dirty_files:
+  ?? configs/distilbert_config.yaml
+  ?? scripts/train_distilbert.py
+  ?? slurm/

@@ -1,0 +1,60 @@
+# Baseline 2 — DistilBERT fine-tune for 27-intent classification
+# Design frozen by user. Do NOT change without an explicit decision + new config.
+# Reference expectations: TF-IDF baseline hit test acc=99.26% / macro-F1=99.22%.
+# DistilBERT is expected to match or slightly exceed, not crush it.
+
+model:
+  base_model: distilbert-base-uncased
+  num_labels: 27
+  max_length: 128            # p99 token length ~21, 128 is safe + 2x padding headroom
+  problem_type: single_label_classification
+
+data:
+  train_path: data/processed/train.parquet
+  val_path: data/processed/val.parquet
+  test_path: data/processed/test.parquet
+  text_column: instruction
+  label_column: intent
+
+training:
+  # Optimizer
+  learning_rate: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  lr_scheduler_type: linear
+  # Schedule
+  num_train_epochs: 3
+  per_device_train_batch_size: 32
+  per_device_eval_batch_size: 64
+  gradient_accumulation_steps: 1
+  # Precision (A40: NEVER fp16 — use bf16)
+  bf16: true
+  fp16: false
+  # Logging / eval / save cadence
+  logging_steps: 50
+  eval_strategy: epoch
+  save_strategy: epoch
+  save_total_limit: 2        # keep best + last only
+  load_best_model_at_end: true
+  metric_for_best_model: eval_macro_f1
+  greater_is_better: true
+  # Early stopping
+  early_stopping_patience: 2
+  # Misc
+  dataloader_num_workers: 2
+  report_to: none
+  seed: 42
+
+artifacts:
+  checkpoint_root: checkpoints/distilbert
+  metrics_root: outputs/metrics
+  figures_dir: outputs/figures
+  error_analysis_dir: outputs/error_analysis
+  confusion_matrix_filename: 04_distilbert_confusion_matrix.png
+  errors_csv_filename: distilbert_errors.csv
+
+runtime:
+  model_name: DistilBERT
+  model_family: bert-classifier
+  n_latency_samples: 300
+  n_latency_warmup: 20
