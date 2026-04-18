@@ -1,0 +1,38 @@
+# Baseline 1 — TF-IDF + LogisticRegression
+# Design frozen by user decision (notebook 01 EDA): no grid search, no class_weight.
+# Text is short (p99=14 words), intent is 27 balanced classes (imbalance ratio ~1.05).
+
+data:
+  train_path: data/processed/train.parquet
+  val_path: data/processed/val.parquet
+  test_path: data/processed/test.parquet
+  text_column: instruction
+  label_column: intent
+
+vectorizer:
+  ngram_range: [1, 2]
+  min_df: 2
+  max_df: 0.95
+  sublinear_tf: true
+  lowercase: true
+
+classifier:
+  solver: saga
+  multi_class: multinomial
+  C: 1.0
+  max_iter: 1000
+  n_jobs: -1
+  random_state: 42
+
+artifacts:
+  checkpoint_dir: checkpoints/tfidf
+  metrics_root: outputs/metrics
+  figures_dir: outputs/figures
+  error_analysis_dir: outputs/error_analysis
+
+runtime:
+  seed: 42
+  n_latency_samples: 500
+  n_latency_warmup: 50
+  model_name: TF-IDF + LR
+  model_family: traditional-ml

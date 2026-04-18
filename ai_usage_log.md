@@ -63,25 +63,30 @@ _[Entries to be added as work progresses]_
 
 ### Entry 2.1 — EDA notebook
 
-- **Date**: 
+- **Date**: 2026-04-17
 - **Agent**: `data-engineer`
-- **Task**: 
-- **Prompt**: 
-- **Output quality**: 
-- **Iterations**: 
-- **Manual interventions**: 
-- **Lesson**: 
+- **Task**: Build `notebooks/01_data_exploration.ipynb` covering assignment specs #1 (source + error detection) and #3 (statistical summary) on the 26,872-row Bitext dump. Read-only — no data mutation.
+- **Prompt**: Single delegation with explicit scope fences (read-only, read CLAUDE.md + agent spec + code-quality skill first, structured section list, figures to `outputs/figures/` at 150 dpi).
+- **Output quality**: 5/5 — 23 cells, zero errors, full-data run (not smoke), 6 figures, and proactively surfaced a discrepancy in CLAUDE.md (11 categories, not 10).
+- **Iterations**: 1 (no rework).
+- **Manual interventions**: Decided commit granularity (CLAUDE.md fix and notebook as two separate commits). No content edits to the notebook.
+- **Lesson**: Read-only scope fences work — the agent did not touch data even when it would have been trivially easy to "fix" the injected-defect story in-place.
 
 ### Entry 2.2 — Data cleaning with injected errors
 
-- **Date**: 
+- **Date**: 2026-04-17
 - **Agent**: `data-engineer`
-- **Task**: 
-- **Prompt**: 
-- **Output quality**: 
-- **Iterations**: 
-- **Manual interventions**: 
-- **Lesson**: 
+- **Task**: Build `notebooks/02_data_cleaning.ipynb` (inject synthetic defects → deterministic cleaning → stratified splits), plus `scripts/prepare_instruction_data.py`, processed parquet + Qwen-format JSONL, and `data_stats.json` audit log.
+- **Prompt**: EDA findings embedded directly as design constraints (stratify on intent not category, preserve all 5 cols for Phase 2, max_len=128, seed=42). Two delegations total: main build + a follow-up to add a cleaning-audit table.
+- **Output quality**: 4/5 — correct first pass, including the non-obvious ordering fix (NFKC *after* mojibake repair because NFKC decomposes `â€™` into `â€TM`). Dropped 0.5 pt because initial split sizes were smaller than the estimate supplied in the prompt; the agent flagged the reason proactively (natural paraphrase duplicates in pristine data collapsed under strict `(instruction, intent)` dedup) rather than silently diverging.
+- **Iterations**: 2 (initial notebook; post-hoc audit-table cell).
+- **Manual interventions**:
+  - Chose strict `(instruction, intent)` dedup over instruction-only after the agent surfaced the trade-off.
+  - Requested a cleaning-audit markdown table for report Section 2.
+  - Overrode `.gitignore` policy: track `test.parquet` + `test.jsonl` only; train/val regenerated deterministically.
+  - Pre-commit hook blocked `train.parquet` (5.04 MB > 5 MB hook threshold); user picked the drop-from-tracking option rather than `--no-verify` or git-lfs.
+  - Requested README update documenting the regeneration workflow.
+- **Lesson**: Front-loading EDA findings into the next-stage prompt as explicit design constraints (not "look at the notebook") produced correct first-try design decisions. Pre-commit hook thresholds should be checked against artefact sizes *before* staging, not discovered at commit time.
 
 ---
 
