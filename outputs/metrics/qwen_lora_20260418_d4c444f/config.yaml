@@ -1,0 +1,80 @@
+model:
+  base_model: unsloth/Qwen2.5-7B-Instruct
+  max_seq_length: 256
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: bfloat16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.0
+  bias: none
+  task_type: CAUSAL_LM
+  target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+  use_gradient_checkpointing: unsloth
+data:
+  train_jsonl: data/instruction/train.jsonl
+  val_jsonl: data/instruction/val.jsonl
+  test_jsonl: data/instruction/test.jsonl
+  test_parquet: data/processed/test.parquet
+  expected_test_set_hash: sha256:5641a8ab0fb4814b
+  response_template: 'Category:'
+training:
+  learning_rate: 0.0002
+  weight_decay: 0.01
+  warmup_ratio: 0.03
+  lr_scheduler_type: cosine
+  max_grad_norm: 1.0
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 8
+  gradient_accumulation_steps: 4
+  bf16: true
+  fp16: false
+  gradient_checkpointing: true
+  optim: paged_adamw_8bit
+  logging_steps: 20
+  eval_strategy: steps
+  eval_steps: 200
+  save_strategy: steps
+  save_steps: 200
+  save_total_limit: 2
+  load_best_model_at_end: true
+  metric_for_best_model: eval_loss
+  greater_is_better: false
+  seed: 42
+  dataloader_num_workers: 2
+  report_to: none
+  packing: false
+generation:
+  do_sample: false
+  temperature: 0.0
+  max_new_tokens: 32
+evaluation:
+  batch_size: 1
+  n_latency_warmup: 20
+  n_latency_samples: 300
+artifacts:
+  checkpoint_root: checkpoints/qwen_lora
+  metrics_root: outputs/metrics
+  figures_dir: outputs/figures
+  error_analysis_dir: outputs/error_analysis
+  confusion_matrix_filename: 06_qwen_lora_confusion_matrix.png
+  errors_csv_filename: qwen_lora_errors.csv
+runtime:
+  model_name: Qwen2.5-7B-QLoRA
+  model_family: llm-generative
+  smoke_train_samples: 100
+  smoke_eval_samples: 50
+  smoke_max_steps: 50
+  smoke_eval_steps: 25
+  smoke_save_steps: 25
+  smoke_logging_steps: 10

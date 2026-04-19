@@ -1,0 +1,125 @@
+# Main Model — Qwen2.5-7B-Instruct + QLoRA for generative intent classification
+# Design frozen by user. Do NOT change without an explicit decision + new config.
+# Reference expectations (test acc):
+#   TF-IDF     = 99.26%
+#   DistilBERT = 99.80%
+#   Qwen QLoRA = 92-96% (per ml-trainer spec) — must match data hash
+# Test set hash (must verify at eval time): sha256:5641a8ab0fb4814b
+
+model:
+  # Float name + load_in_4bit=true — Unsloth loader_utils auto-redirects to the
+  # -bnb-4bit variant via FLOAT_TO_INT_MAPPER. Passing the -bnb-4bit name
+  # directly falls through every mapper branch in unsloth==2024.12.12 and
+  # triggers a misleading "please upgrade Unsloth" NotImplementedError.
+  base_model: unsloth/Qwen2.5-7B-Instruct
+  max_seq_length: 256            # EDA: prompt ~50 tok + target ~15 tok; 256 = ~4x headroom
+  load_in_4bit: true
+  # These knobs are consumed by the Transformers+PEFT fallback path only; Unsloth
+  # picks them up from the pre-quantized weights automatically.
+  bnb_4bit_compute_dtype: bfloat16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.0              # 0 unlocks Unsloth's fused-kernel fast path (+10-20% throughput). Data is near-separable (TF-IDF=99.26%); low-rank LoRA itself is strong regularization.
+  bias: none
+  task_type: CAUSAL_LM
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  # Unsloth's fused-kernel checkpointing. Safe to leave on — Unsloth replaces it
+  # with the vanilla torch checkpointer if a module doesn't support the fused path.
+  use_gradient_checkpointing: unsloth
+
+data:
+  # Instruction JSONL (produced by notebook 02 / prepare_instruction_data.py).
+  # Schema per line: {instruction, input, output}  — HF `alpaca`-style.
+  train_jsonl: data/instruction/train.jsonl
+  val_jsonl: data/instruction/val.jsonl
+  test_jsonl: data/instruction/test.jsonl
+  # The canonical test parquet is the source of truth for per-class labels +
+  # test_set_hash. Same file every model must hash to sha256:5641a8ab0fb4814b.
+  test_parquet: data/processed/test.parquet
+  expected_test_set_hash: "sha256:5641a8ab0fb4814b"
+  # Chat template response marker. Loss mask starts at the first occurrence of
+  # this string in each example (via TRL DataCollatorForCompletionOnlyLM).
+  # Qwen2.5 chat template emits `<|im_start|>assistant\nCategory: ...` — using
+  # just "Category:" is robust across tokenizer subtleties and matches user spec.
+  response_template: "Category:"
+
+training:
+  # Optimizer
+  learning_rate: 2.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.03
+  lr_scheduler_type: cosine
+  max_grad_norm: 1.0
+  # Schedule — effective batch = 4 * 4 = 16
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 8
+  gradient_accumulation_steps: 4
+  # Precision (A40: NEVER fp16 — use bf16)
+  bf16: true
+  fp16: false
+  gradient_checkpointing: true
+  optim: paged_adamw_8bit
+  # Logging / eval / save cadence (full run)
+  logging_steps: 20
+  eval_strategy: steps
+  eval_steps: 200
+  save_strategy: steps
+  save_steps: 200
+  save_total_limit: 2              # keep best + last only (LoRA adapters are ~100MB each)
+  load_best_model_at_end: true
+  metric_for_best_model: eval_loss
+  greater_is_better: false
+  # Reproducibility — seed=42 covers Trainer shuffling. data_seed dropped:
+  # requires accelerate>=1.1.0 which conflicts with the pinned unsloth stack.
+  seed: 42
+  # Misc
+  dataloader_num_workers: 2
+  report_to: none
+  # Packing: off — we want clean per-example loss masking on the response span
+  packing: false
+
+generation:
+  # Greedy, deterministic. Classification — no sampling.
+  do_sample: false
+  temperature: 0.0
+  max_new_tokens: 32               # "Category: X\nIntent: Y" ~ 10-15 tok, 32 is safe
+  # Early stop at first newline after "Intent: ..." via model's eos, but keep it
+  # simple and just cap tokens. The parser tolerates trailing junk.
+
+evaluation:
+  # Batch size for test-set generation (bs=1 for clean per-sample latency).
+  # Full test set has 3500 rows; at ~250ms/sample that is ~15 min.
+  batch_size: 1
+  n_latency_warmup: 20
+  n_latency_samples: 300
+
+artifacts:
+  checkpoint_root: checkpoints/qwen_lora
+  metrics_root: outputs/metrics
+  figures_dir: outputs/figures
+  error_analysis_dir: outputs/error_analysis
+  confusion_matrix_filename: 06_qwen_lora_confusion_matrix.png
+  errors_csv_filename: qwen_lora_errors.csv
+
+runtime:
+  model_name: Qwen2.5-7B-QLoRA
+  model_family: llm-generative
+  # Smoke-test mode overrides (applied by the script when --smoke-test)
+  smoke_train_samples: 100
+  smoke_eval_samples: 50
+  smoke_max_steps: 50
+  smoke_eval_steps: 25
+  smoke_save_steps: 25
+  smoke_logging_steps: 10

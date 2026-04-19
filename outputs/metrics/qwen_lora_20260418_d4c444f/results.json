@@ -1,0 +1,295 @@
+{
+  "run_id": "qwen_lora_20260418_d4c444f",
+  "model_name": "Qwen2.5-7B-QLoRA",
+  "model_family": "llm-generative",
+  "checkpoint_path": "checkpoints/qwen_lora/qwen_lora_20260418_d4c444f/final_adapter",
+  "test_set": "data/processed/test.parquet",
+  "test_set_hash": "sha256:5641a8ab0fb4814b",
+  "n_samples": 3500,
+  "timestamp": "2026-04-18T11:44:12.943239Z",
+  "git_commit": "d4c444f",
+  "seed": 42,
+  "training_wallclock_seconds": 5813.164,
+  "framework_versions": {
+    "python": "3.10.20",
+    "torch": "2.4.1+cu121",
+    "transformers": "4.46.0",
+    "pandas": "2.3.3",
+    "numpy": "1.26.4"
+  },
+  "metrics": {
+    "intent": {
+      "accuracy": 0.9997,
+      "macro_f1": 0.9999,
+      "macro_precision": 1.0,
+      "macro_recall": 0.9997,
+      "weighted_f1": 0.9999,
+      "per_class": {
+        "cancel_order": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 71
+        },
+        "change_order": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 125
+        },
+        "change_shipping_address": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 138
+        },
+        "check_cancellation_fee": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 133
+        },
+        "check_invoice": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 131
+        },
+        "check_payment_methods": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 145
+        },
+        "check_refund_policy": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 141
+        },
+        "complaint": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 141
+        },
+        "contact_customer_service": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 141
+        },
+        "contact_human_agent": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 144
+        },
+        "create_account": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 128
+        },
+        "delete_account": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 130
+        },
+        "delivery_options": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 94
+        },
+        "delivery_period": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 140
+        },
+        "edit_account": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 111
+        },
+        "get_invoice": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 129
+        },
+        "get_refund": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 130
+        },
+        "newsletter_subscription": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 143
+        },
+        "payment_issue": {
+          "precision": 1.0,
+          "recall": 0.993,
+          "f1": 0.9965,
+          "support": 142
+        },
+        "place_order": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 141
+        },
+        "recover_password": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 140
+        },
+        "registration_problems": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 140
+        },
+        "review": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 141
+        },
+        "set_up_shipping_address": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 143
+        },
+        "switch_account": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 122
+        },
+        "track_order": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 114
+        },
+        "track_refund": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 102
+        },
+        "micro avg": {
+          "precision": 1.0,
+          "recall": 0.9997,
+          "f1": 0.9999,
+          "support": 3500
+        }
+      }
+    },
+    "category": {
+      "accuracy": 0.9994,
+      "macro_f1": 0.9994,
+      "macro_precision": 0.9994,
+      "macro_recall": 0.9995,
+      "weighted_f1": 0.9994,
+      "per_class": {
+        "ACCOUNT": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 771
+        },
+        "CANCEL": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 133
+        },
+        "CONTACT": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 285
+        },
+        "DELIVERY": {
+          "precision": 0.9957,
+          "recall": 1.0,
+          "f1": 0.9979,
+          "support": 234
+        },
+        "FEEDBACK": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 282
+        },
+        "INVOICE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 260
+        },
+        "ORDER": {
+          "precision": 0.9978,
+          "recall": 0.9978,
+          "f1": 0.9978,
+          "support": 451
+        },
+        "PAYMENT": {
+          "precision": 1.0,
+          "recall": 0.9965,
+          "f1": 0.9983,
+          "support": 287
+        },
+        "REFUND": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 373
+        },
+        "SHIPPING": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 281
+        },
+        "SUBSCRIPTION": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 143
+        }
+      }
+    }
+  },
+  "latency": {
+    "p50_ms": 551.1435546875,
+    "p95_ms": 648.8011901855468,
+    "p99_ms": 651.8032800292968,
+    "mean_ms": 552.8770735677083,
+    "std_ms": 43.53845732898636,
+    "throughput_per_sec": 1.8087203246591752,
+    "batch_size": 1,
+    "device": "cuda",
+    "precision": "bf16+4bit",
+    "n_samples_timed": 300
+  },
+  "resources": {
+    "gpu_memory_mb_peak_train": 7166,
+    "gpu_memory_mb_peak_inference": 6378,
+    "disk_size_mb": 169.2,
+    "parameters_trainable": 40370176,
+    "parameters_total": 4393342464
+  },
+  "parse_errors": 1,
+  "notes": "Main model (Qwen2.5-7B QLoRA generative). epochs=3 max_steps=-1 per_device_bs=4 grad_accum=4 effective_bs=16 lr=0.0002 bf16=True max_seq_length=256. parse_errors=1/3500."
+}
