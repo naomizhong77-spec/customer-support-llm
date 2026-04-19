@@ -23,7 +23,9 @@ _[To be filled in after experiments. Placeholder structure:]_
 
 ## 🧰 Stack
 
-- **Data**: [Bitext Customer Support dataset](https://www.kaggle.com/datasets/bitext/bitext-gen-ai-chatbot-customer-support-dataset) (~27k English tickets, 27 intents × 11 categories)
+- **Data**: two datasets, run in parallel to separate templated from real-user behaviour:
+  1. [Bitext Customer Support dataset](https://www.kaggle.com/datasets/bitext/bitext-gen-ai-chatbot-customer-support-dataset) — ~27k synthetic-augmented English tickets, 11 categories × 27 intents
+  2. [PolyAI/banking77](https://huggingface.co/datasets/PolyAI/banking77) — 13k real user-written banking queries, flat 77-way intent classification
 - **Traditional ML**: scikit-learn
 - **Deep Learning**: HuggingFace Transformers (DistilBERT)
 - **LLM Fine-tuning**: Unsloth + PEFT (Qwen2.5-7B with 4-bit QLoRA)
@@ -124,11 +126,18 @@ kaggle datasets download -d bitext/bitext-gen-ai-chatbot-customer-support-datase
 
 ### 3. Data Preparation
 
-The canonical **test set** is committed (`data/processed/test.parquet` and
-`data/instruction/test.jsonl`) so that all three models are evaluated on the
-exact same examples. The **train and validation splits are NOT tracked in
-git** — they are regenerated deterministically by running notebook 02
-end-to-end with `seed=42`:
+This project uses **two datasets** to quantify where the LLM approach earns
+its keep:
+
+#### Dataset 1: Bitext Customer Support
+
+Templated / synthetic-augmented English customer-support corpus (~27k rows,
+11 categories × 27 intents, near-perfect class balance). The canonical
+**test set** is committed (`data/processed/test.parquet` and
+`data/instruction/test.jsonl`) so all three models evaluate on the exact
+same examples. The **train and validation splits are NOT tracked in git**
+— regenerate deterministically by running notebooks 01 and 02 end-to-end
+with `seed=42`:
 
 ```bash
 jupyter nbconvert --to notebook --execute notebooks/01_data_exploration.ipynb
@@ -138,10 +147,42 @@ jupyter nbconvert --to notebook --execute notebooks/02_data_cleaning.ipynb
 # data/instruction/{train,val,test}.jsonl
 ```
 
-Run these before any training. The cleaning pipeline (defect injection →
-deterministic cleaning → stratified split) is audit-logged to
-`outputs/metrics/data_stats.json` so you can verify your regenerated splits
-match the reference commit hash stored there.
+The cleaning pipeline (synthetic defect injection → deterministic cleaning →
+stratified 75/10/15 split) is audit-logged to
+`outputs/metrics/data_stats.json`.
+
+#### Dataset 2: BANKING77
+
+Real user-written online banking queries from `PolyAI/banking77` on
+HuggingFace (13,083 rows, flat 77-way intent classification, no category
+hierarchy, no agent response). BANKING77 is the **real-user complement** to
+Bitext's templated data — running the same 3-model comparison on both lets
+us build a 2×3 experimental grid that separates "does the classifier work
+on clean templated data?" from "does it survive noisy real-user input?".
+The hypothesis is that a TF-IDF baseline is fine for Bitext but a 7B LLM
+earns its keep on BANKING77.
+
+Regenerate via notebooks 07 and 08:
+
+```bash
+jupyter nbconvert --to notebook --execute notebooks/07_banking77_exploration.ipynb
+jupyter nbconvert --to notebook --execute notebooks/08_banking77_cleaning.ipynb
+# notebook 08 writes data/banking77/processed/{train,val,test}.parquet and
+# invokes scripts/prepare_banking77_instruction_data.py to produce
+# data/banking77/instruction/{train,val,test}.jsonl (Alpaca format)
+```
+
+The HF native `train` split (10,003 rows) is stratify-split 88/12 into
+train/val. The HF native `test` split (3,080 rows) is passed through the
+same whitespace/NFKC cleaning so all three splits share one schema — this
+surfaces 1 within-test `(text, label)` duplicate and 7 whitespace-masked
+train/test leakage pairs, all dropped (see notebook 08, section 13). Final
+splits: **train 8,793 / val 1,199 / test 3,079**. The cleaned test parquet
+is pinned via sha256 in `outputs/metrics/banking77_test_hash.txt`.
+Unlike Bitext, **no synthetic errors are injected** — BANKING77 is real
+data, so notebook 08 reports genuine upstream quality issues (whitespace
+artefacts, cross-split leakage hidden behind whitespace normalisation).
+Audit trail: `outputs/metrics/banking77_stats.json`.
 
 ### 4. Train Models
 
