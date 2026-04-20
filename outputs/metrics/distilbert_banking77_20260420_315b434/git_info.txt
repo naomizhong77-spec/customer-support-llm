@@ -1,0 +1,9 @@
+commit: 315b434
+timestamp: 2026-04-20T07:02:37.652499+00:00
+dirty_files:
+  ?? .claude/.nfs000000000019199100022da4
+  ?? configs/distilbert_banking77_config.yaml
+  ?? outputs/figures/09_distilbert_banking77_confusion_matrix.png
+  ?? outputs/metrics/distilbert_banking77_20260420_315b434/
+  ?? scripts/train_distilbert_banking77.py
+  ?? slurm/train_distilbert_banking77.sh

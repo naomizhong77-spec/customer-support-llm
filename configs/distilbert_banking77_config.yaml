@@ -1,0 +1,71 @@
+# Baseline 2 (BANKING77) — DistilBERT fine-tune for 77-intent classification
+# Design mirrors configs/distilbert_config.yaml (Bitext) EXCEPT:
+#   - data paths / columns / num_labels point at BANKING77
+#   - num_train_epochs bumped 3 -> 5 (77 fine-grained classes, many near-synonyms;
+#     early_stopping_patience=2 will cut short if val macro-F1 plateaus)
+#   - test_set_hash pin uses the BANKING77 file-bytes contract
+#     (see scripts/train_tfidf_banking77.py for the canonical function).
+# All other hyperparameters (max_length=128, bs=32, lr=2e-5, warmup=0.1, bf16)
+# intentionally held constant for cross-dataset comparability.
+
+model:
+  base_model: distilbert-base-uncased
+  num_labels: 77
+  max_length: 128            # BANKING77 texts are short (median ~11 tokens); 128 is safe
+  problem_type: single_label_classification
+
+data:
+  train_path: data/banking77/processed/train.parquet
+  val_path: data/banking77/processed/val.parquet
+  test_path: data/banking77/processed/test.parquet
+  text_column: text
+  label_column: label_name
+
+training:
+  # Optimizer
+  learning_rate: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  lr_scheduler_type: linear
+  # Schedule
+  num_train_epochs: 10        # bumped from 5: val loss still decreasing at epoch 5 in run 21683
+                              # early_stopping_patience=2 will cut short when val_macro_f1 plateaus
+  per_device_train_batch_size: 32
+  per_device_eval_batch_size: 64
+  gradient_accumulation_steps: 1
+  # Precision (A40: NEVER fp16 — use bf16)
+  bf16: true
+  fp16: false
+  # Logging / eval / save cadence
+  logging_steps: 50
+  eval_strategy: epoch
+  save_strategy: epoch
+  save_total_limit: 2        # keep best + last only
+  load_best_model_at_end: true
+  metric_for_best_model: eval_macro_f1
+  greater_is_better: true
+  # Early stopping
+  early_stopping_patience: 2
+  # Misc
+  dataloader_num_workers: 2
+  report_to: none
+  seed: 42
+
+artifacts:
+  checkpoint_root: checkpoints/distilbert_banking77
+  metrics_root: outputs/metrics
+  figures_dir: outputs/figures
+  error_analysis_dir: outputs/error_analysis
+  confusion_matrix_filename: 09_distilbert_banking77_confusion_matrix.png
+  errors_csv_filename: distilbert_banking77_errors.csv
+
+runtime:
+  model_name: DistilBERT (BANKING77)
+  model_family: bert-classifier
+  n_latency_samples: 300
+  n_latency_warmup: 20
+  # Cross-model test-set pinning: full sha256 of the raw test.parquet bytes.
+  # All three BANKING77 models (TF-IDF, DistilBERT, Qwen QLoRA) must record the
+  # same value in results.json.test_set_hash to prove identical evaluation data.
+  # Verify locally with: sha256sum data/banking77/processed/test.parquet
+  expected_test_set_hash: sha256:6b7f43ccbe394d73310fa8d23ac97cebf9ce1292e989bca5f6001c52d8e33ddc
