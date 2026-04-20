@@ -1,0 +1,14 @@
+commit: 3eb1a21
+timestamp: 2026-04-20T11:21:50.305981+00:00
+original_run_id: qwen_lora_banking77_20260420_3eb1a21
+adapter_path: /home/mcaai/zh0038qi/customer-support-llm/checkpoints/qwen_lora_banking77/qwen_lora_banking77_20260420_3eb1a21/final_adapter
+dirty_files:
+  ?? .claude/.nfs000000000019199100022da4
+  ?? configs/qwen_lora_banking77_config.yaml
+  ?? outputs/figures/10_qwen_lora_banking77_confusion_matrix.png
+  ?? outputs/metrics/qwen_lora_banking77_20260420_3eb1a21/
+  ?? outputs/metrics/qwen_lora_banking77_20260420_3eb1a21_reval/
+  ?? scripts/eval_qwen_lora_banking77.py
+  ?? scripts/train_qwen_lora_banking77.py
+  ?? slurm/eval_qwen_lora_banking77.sh
+  ?? slurm/train_qwen_lora_banking77.sh

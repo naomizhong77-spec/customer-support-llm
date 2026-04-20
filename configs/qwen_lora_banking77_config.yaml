@@ -1,0 +1,122 @@
+# Main Model (BANKING77) — Qwen2.5-7B-Instruct + QLoRA for generative 77-intent classification
+# Mirrors configs/qwen_lora_config.yaml (Bitext) EXCEPT:
+#   - Data paths / label space point at BANKING77 (flat 77 intents, no category hierarchy)
+#   - response_template is "Intent:" (single-line output, not Bitext's two-line "Category:/Intent:")
+#   - test_set_hash pin uses the BANKING77 file-bytes contract
+#     (see scripts/train_tfidf_banking77.py::test_set_hash for the canonical function).
+# All other hyperparameters (LoRA r=16/alpha=32/dropout=0, bf16, max_seq_length=256,
+# 3 epochs, effective bs=16, lr=2e-4) intentionally held constant for cross-dataset
+# comparability.
+
+model:
+  # Float name + load_in_4bit=true — Unsloth loader_utils auto-redirects to the
+  # -bnb-4bit variant via FLOAT_TO_INT_MAPPER. Passing the -bnb-4bit name directly
+  # falls through every mapper branch in unsloth==2024.12.12 and triggers a
+  # misleading "please upgrade Unsloth" NotImplementedError.
+  base_model: unsloth/Qwen2.5-7B-Instruct
+  max_seq_length: 256            # BANKING77 queries short (median ~11 tok); prompt+response ~50 tok total; 256 = ~5x headroom
+  load_in_4bit: true
+  # Consumed by Transformers+PEFT fallback path only; Unsloth picks these up from
+  # the pre-quantized weights automatically.
+  bnb_4bit_compute_dtype: bfloat16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.0              # 0 unlocks Unsloth's fused-kernel fast path (+10-20% throughput). 77-way classification with many near-synonyms; low-rank LoRA itself is regularization.
+  bias: none
+  task_type: CAUSAL_LM
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  use_gradient_checkpointing: unsloth
+
+data:
+  # BANKING77 instruction JSONL (produced by scripts/prepare_banking77_instruction_data.py).
+  # Schema per line: {instruction, input, output: "Intent: <label_name>"} — HF alpaca-style.
+  train_jsonl: data/banking77/instruction/train.jsonl
+  val_jsonl: data/banking77/instruction/val.jsonl
+  test_jsonl: data/banking77/instruction/test.jsonl
+  # Canonical test parquet (source of truth for label space + hash). Columns: text, label, label_name.
+  test_parquet: data/banking77/processed/test.parquet
+  label_column: label_name
+  # Full sha256 of raw test.parquet bytes — must match across TF-IDF/DistilBERT/Qwen.
+  # Verify locally: sha256sum data/banking77/processed/test.parquet
+  expected_test_set_hash: "sha256:6b7f43ccbe394d73310fa8d23ac97cebf9ce1292e989bca5f6001c52d8e33ddc"
+  # BANKING77 response is single-line "Intent: <label>". response_template anchor
+  # must be the exact substring the tokenizer emits for the "Intent:" prefix.
+  # Qwen2.5 chat template puts the assistant response after `<|im_start|>assistant\n`,
+  # so the literal "Intent:" appears once per example at the start of the answer.
+  response_template: "Intent:"
+
+training:
+  # Optimizer
+  learning_rate: 2.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.03
+  lr_scheduler_type: cosine
+  max_grad_norm: 1.0
+  # Schedule — effective batch = 4 * 4 = 16
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 8
+  gradient_accumulation_steps: 4
+  # Precision (A40: NEVER fp16 — use bf16)
+  bf16: true
+  fp16: false
+  gradient_checkpointing: true
+  optim: paged_adamw_8bit
+  # Logging / eval / save cadence (full run)
+  logging_steps: 20
+  eval_strategy: steps
+  eval_steps: 200
+  save_strategy: steps
+  save_steps: 200
+  save_total_limit: 2              # keep best + last only (LoRA adapters are ~100MB each)
+  load_best_model_at_end: true
+  metric_for_best_model: eval_loss
+  greater_is_better: false
+  seed: 42
+  dataloader_num_workers: 2
+  report_to: none
+  # Packing: off — we want clean per-example loss masking on the response span
+  packing: false
+
+generation:
+  # Greedy, deterministic. Classification — no sampling.
+  do_sample: false
+  temperature: 0.0
+  max_new_tokens: 24               # "Intent: <label_name>" ~ 5-10 tok; 24 is safe
+
+evaluation:
+  # Batch size for test-set generation (bs=1 for clean per-sample latency).
+  # BANKING77 test has 3079 rows; at ~500ms/sample that is ~25 min.
+  batch_size: 1
+  n_latency_warmup: 20
+  n_latency_samples: 300
+
+artifacts:
+  checkpoint_root: checkpoints/qwen_lora_banking77
+  metrics_root: outputs/metrics
+  figures_dir: outputs/figures
+  error_analysis_dir: outputs/error_analysis
+  confusion_matrix_filename: 10_qwen_lora_banking77_confusion_matrix.png
+  errors_csv_filename: qwen_lora_banking77_errors.csv
+
+runtime:
+  model_name: Qwen2.5-7B-QLoRA (BANKING77)
+  model_family: llm-generative
+  # Smoke-test mode overrides (applied by the script when --smoke-test)
+  smoke_train_samples: 100
+  smoke_eval_samples: 50
+  smoke_max_steps: 50
+  smoke_eval_steps: 25
+  smoke_save_steps: 25
+  smoke_logging_steps: 10

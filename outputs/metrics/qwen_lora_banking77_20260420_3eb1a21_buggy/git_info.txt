@@ -1,0 +1,7 @@
+commit: 3eb1a21
+timestamp: 2026-04-20T08:47:07.961648+00:00
+dirty_files:
+  ?? .claude/.nfs000000000019199100022da4
+  ?? configs/qwen_lora_banking77_config.yaml
+  ?? scripts/train_qwen_lora_banking77.py
+  ?? slurm/train_qwen_lora_banking77.sh
