@@ -1,0 +1,33 @@
+data:
+  train_path: data/banking77/processed/train.parquet
+  val_path: data/banking77/processed/val.parquet
+  test_path: data/banking77/processed/test.parquet
+  text_column: text
+  label_column: label_name
+vectorizer:
+  ngram_range:
+  - 1
+  - 2
+  min_df: 2
+  max_df: 0.95
+  sublinear_tf: true
+  lowercase: true
+classifier:
+  solver: saga
+  multi_class: multinomial
+  C: 1.0
+  max_iter: 1000
+  n_jobs: -1
+  random_state: 42
+artifacts:
+  checkpoint_dir: checkpoints/tfidf_banking77
+  metrics_root: outputs/metrics
+  figures_dir: outputs/figures
+  error_analysis_dir: outputs/error_analysis
+runtime:
+  seed: 42
+  n_latency_samples: 500
+  n_latency_warmup: 50
+  model_name: TF-IDF + LR (BANKING77)
+  model_family: traditional-ml
+  expected_test_set_hash: sha256:6b7f43ccbe394d73310fa8d23ac97cebf9ce1292e989bca5f6001c52d8e33ddc
