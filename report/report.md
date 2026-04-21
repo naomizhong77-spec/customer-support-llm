@@ -505,3 +505,108 @@ inference cost: Qwen p50 latency is 273.13 ms vs DistilBERT 4.89 ms on
 the same test set (~55×); the Qwen artefact is a 170.0 MB LoRA adapter
 over a 4.39B 4-bit-quantised base, while DistilBERT is a 256.56 MB
 full-parameter checkpoint.
+
+---
+
+## 7. AI Coding Assistant Usage Summary
+
+This section summarises how AI coding assistants were used across the
+project, what the setup enabled, the difficulties encountered, and the
+practical recommendations that followed from them.
+
+### 7.1 Tools and configuration
+
+The primary tool was Claude Code (an agentic command-line interface that
+edits files and runs shell commands on the cluster). Anthropic's Claude web
+interface was used separately for strategic planning and report review.
+Four custom agents were defined in `.claude/agents/` (`data-engineer`,
+`ml-trainer`, `evaluator`, `report-writer`) alongside four reusable skills
+in `.claude/skills/` (`slurm-submit`, `lora-training`, `ml-evaluation`,
+`code-quality`). A single `CLAUDE.md` file at the repository root held the
+project rules each session must follow: code must pass Level 1 and Level 2
+validation before commit, any training run over ten minutes must go through
+SLURM batch submission, a smoke test must precede every full training run,
+no credentials or large data files may be committed, and every run must
+produce a `config.yaml`, a `results.json`, and a recorded git hash and seed.
+
+### 7.2 What AI assistance enabled
+
+I planned the project scope and the target outputs first, and then
+delegated within that plan. The four specialised agents kept each phase
+in-domain rather than routing everything through a single generalist. The
+`data-engineer` agent built `notebooks/01_data_exploration.ipynb` in a
+single delegation with no rework (`ai_usage_log.md` Entry 2.1), and while
+running the EDA it proactively flagged that `CLAUDE.md` recorded 10
+categories when the Bitext dump actually contained 11 — that correction was
+committed separately (`96fc33e`) before the notebook commit (`0a34988`).
+
+A more consequential example was the decision to add a second dataset.
+After the `ml-trainer` agent produced the TF-IDF baseline on Bitext and
+observed test accuracy of 99.26% (Table 6.1), the agent surfaced that a
+linear model on Bitext alone would not differentiate the three classifier
+families, and recommended adding a real-user corpus for cross-validation.
+That is how BANKING77 entered the project (commit `02d32c3`), and it is
+the reason the BANKING77 results in Section 6 — where the ordering between
+TF-IDF, DistilBERT, and Qwen becomes visible — exist at all. When the
+BANKING77 cleaning stage hit a tradeoff between instruction-only dedup and
+stricter `(instruction, intent)` dedup, the agent surfaced both options
+with their consequences rather than picking one silently, and I chose the
+stricter rule (Entry 2.2). Across sessions, agents wrote lessons into
+memory (for example, "same git hash implies same run_id implies artefacts
+overwrite in place"), which kept later sessions from repeating earlier
+mistakes.
+
+### 7.3 Difficulties and how they were resolved
+
+Two training runs finished cleanly on paper but were silently wrong, and
+both needed manual review to catch.
+
+The DistilBERT BANKING77 run terminated at 86.00% test accuracy after five
+epochs and looked like a normal convergence (commit `315b434`). On review,
+the training-time best-checkpoint callback had never fired because
+`metric_for_best_model` did not match the key emitted by `compute_metrics`,
+so the run silently loaded the epoch-1 checkpoint at the end while
+validation loss was still decreasing. After aligning the metric name and
+extending training to ten epochs, the retry reached 91.78% test accuracy
+(Section 5.3; commit `3eb1a21`).
+
+The Qwen2.5-7B QLoRA BANKING77 run finished with final training loss
+0.1132 but reported 0/3,079 correct predictions at evaluation time
+(`ai_usage_log.md` Entry 5.3, commit `8688704`). The failure was not in
+the adapter. The string `"Intent:"` had been used both as the
+`DataCollatorForCompletionOnlyLM` response template — which masks the loss
+up to and including that anchor — and as the strict regex anchor in the
+evaluation parser. Because the loss never shaped the emission of
+`"Intent:"` itself, the model had correctly learned to emit bare labels
+(for example `"card_arrival"`) immediately after the masked position,
+which the parser then rejected. Visual inspection of `pred_raw` in the
+buggy `errors.csv` revealed the diagnosis in seconds: the model output was
+already the correct label. A three-stage parser cascade (regex → bare-label
+exact match → fuzzy `difflib` fallback) recovered 91.65% test accuracy
+with 7 residual parse errors and no retraining.
+
+The shared lesson from both training retros is that a job running to
+completion is not the same as a job training correctly. Silent failures
+require a human reviewer who reads the numbers and the raw outputs, not
+just the exit code.
+
+### 7.4 Recommendations
+
+Five principles summarise what this project taught me about working with
+AI coding assistants on a non-trivial machine-learning pipeline:
+
+1. Plan the steps to delegate before opening the assistant. The human
+   defines scope and sequencing; the assistant executes within that plan.
+2. Use specialised agents for distinct subtasks rather than a single
+   general-purpose assistant. Each of the four agents in this project
+   stayed within a narrow remit, which made outputs easier to review.
+3. Actively review AI outputs — metrics, artefact paths, and intermediate
+   numbers — before committing. Both silent failures in Section 7.3 were
+   caught only on manual review.
+4. Respect agent integrity signals. When an agent flags a conflict, a
+   discrepancy, or a tradeoff (as happened with the category count and
+   with the dedup choice), investigate before overriding.
+5. AI cannot decide scope or narrative direction. The human must decide
+   what the project is telling the reader; the assistant cannot infer that
+   from the data alone.
+
