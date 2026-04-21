@@ -16,11 +16,15 @@ import json
 import subprocess
 from pathlib import Path
 
+import pandas as pd
+
 ROOT = Path("/home/mcaai/zh0038qi/customer-support-llm")
 METRICS = ROOT / "outputs" / "metrics"
 CONSOLIDATED = ROOT / "outputs" / "consolidated"
 FIGURES = ROOT / "outputs" / "figures"
 CONFIGS_DIR = ROOT / "configs"
+DATA_BITEXT = ROOT / "data" / "processed"
+DATA_BANKING77 = ROOT / "data" / "banking77" / "processed"
 
 CONSOLIDATED.mkdir(parents=True, exist_ok=True)
 
@@ -52,6 +56,68 @@ def du_mb(path: Path) -> float | None:
         return None
     out = subprocess.check_output(["du", "-sm", str(path)]).decode().split()[0]
     return float(out)
+
+
+def _round4(x):
+    return round(float(x), 4)
+
+
+def compute_text_length_stats(text_series: pd.Series) -> dict:
+    """Descriptive stats on char/word length for a text column.
+
+    Returns the unified schema:
+      {
+        "n_rows": int,
+        "source": str,            # filled by caller
+        "percentiles": {
+          "char_count": {p50, p90, p95, p99, max},
+          "word_count": {p50, p90, p95, p99, max}
+        },
+        "mean_std_median": {
+          "char_count": {mean, std, median},
+          "word_count": {mean, std, median}
+        }
+      }
+    Percentiles are kept alongside mean/std/median per CA6000 spec.
+    """
+    s = text_series.astype(str)
+    chars = s.str.len()
+    words = s.str.split(r"\s+", regex=True).map(lambda toks: sum(1 for t in toks if t))
+
+    def pcts(series):
+        return {
+            "p50": _round4(series.quantile(0.50)),
+            "p90": _round4(series.quantile(0.90)),
+            "p95": _round4(series.quantile(0.95)),
+            "p99": _round4(series.quantile(0.99)),
+            "max": _round4(series.max()),
+        }
+
+    def msm(series):
+        return {
+            "mean": _round4(series.mean()),
+            "std": _round4(series.std(ddof=1)),
+            "median": _round4(series.median()),
+        }
+
+    return {
+        "n_rows": int(len(s)),
+        "percentiles": {"char_count": pcts(chars), "word_count": pcts(words)},
+        "mean_std_median": {"char_count": msm(chars), "word_count": msm(words)},
+    }
+
+
+def compute_class_count_stats(label_series: pd.Series) -> dict:
+    """Descriptive stats of per-class sample counts across all N classes."""
+    counts = label_series.value_counts()
+    return {
+        "n_classes": int(len(counts)),
+        "mean": _round4(counts.mean()),
+        "std": _round4(counts.std(ddof=1)),
+        "median": _round4(counts.median()),
+        "min": int(counts.min()),
+        "max": int(counts.max()),
+    }
 
 
 def load_run(dataset, model, run_dir, cfg_rel, git_hash):
@@ -225,6 +291,30 @@ print(f"summary_table rows: {len(summary_rows)}")
 bitext_data_stats = json.loads((METRICS / "data_stats.json").read_text())
 banking77_stats = json.loads((METRICS / "banking77_stats.json").read_text())
 
+# Load parquets (combined across splits) for descriptive-stat extension
+bitext_all = pd.concat(
+    [pd.read_parquet(DATA_BITEXT / f"{s}.parquet") for s in ("train", "val", "test")],
+    ignore_index=True,
+)
+banking77_all = pd.concat(
+    [pd.read_parquet(DATA_BANKING77 / f"{s}.parquet") for s in ("train", "val", "test")],
+    ignore_index=True,
+)
+
+bitext_text_length_stats = compute_text_length_stats(bitext_all["instruction"])
+bitext_text_length_stats["source"] = (
+    "combined train+val+test parquets under data/processed/ (classification input column: instruction)"
+)
+bitext_class_count_stats = compute_class_count_stats(bitext_all["intent"])
+bitext_class_count_stats["source"] = "combined train+val+test, intent column (27 classes)"
+
+banking77_text_length_stats = compute_text_length_stats(banking77_all["text"])
+banking77_text_length_stats["source"] = (
+    "combined train+val+test parquets under data/banking77/processed/ (column: text)"
+)
+banking77_class_count_stats = compute_class_count_stats(banking77_all["label_name"])
+banking77_class_count_stats["source"] = "combined train+val+test, label_name column (77 classes)"
+
 datasets_summary = {
     "bitext": {
         "source": "bitext/Bitext-customer-support-llm-chatbot-training-dataset (HuggingFace); also mirrored via Kaggle. License: CDLA-Sharing-1.0",
@@ -246,6 +336,8 @@ datasets_summary = {
             "p50": 540.0, "p90": 1059.0, "p95": 1295.0, "p99": 1837.0, "max": 2472.0,
             "source": "notebook 01 cell output"
         },
+        "text_length_stats": bitext_text_length_stats,
+        "class_count_stats": bitext_class_count_stats,
         "splits": bitext_data_stats["split_sizes"],
         "test_set_hash": "sha256:5641a8ab0fb4814b",
         "test_set_hash_source": "pulled verbatim from every Bitext results.json; truncated form used by Bitext evaluation scripts",
@@ -284,6 +376,8 @@ datasets_summary = {
         "median_class_size_train_raw": banking77_stats["eda"]["class_distribution_train"]["median"],
         "text_length_stats_chars": banking77_stats["eda"]["text_length_train"]["chars"],
         "text_length_stats_words": banking77_stats["eda"]["text_length_train"]["words"],
+        "text_length_stats": banking77_text_length_stats,
+        "class_count_stats": banking77_class_count_stats,
         "splits": banking77_stats["cleaning"]["split_sizes"],
         "test_set_hash": "sha256:6b7f43ccbe394d73310fa8d23ac97cebf9ce1292e989bca5f6001c52d8e33ddc",
         "test_set_hash_source": "outputs/metrics/banking77_test_hash.txt and every BANKING77 results.json",

@@ -31,6 +31,47 @@
       "max": 2472.0,
       "source": "notebook 01 cell output"
     },
+    "text_length_stats": {
+      "n_rows": 23326,
+      "percentiles": {
+        "char_count": {
+          "p50": 48.0,
+          "p90": 59.0,
+          "p95": 61.0,
+          "p99": 84.0,
+          "max": 499.0
+        },
+        "word_count": {
+          "p50": 9.0,
+          "p90": 12.0,
+          "p95": 13.0,
+          "p99": 15.0,
+          "max": 120.0
+        }
+      },
+      "mean_std_median": {
+        "char_count": {
+          "mean": 49.2591,
+          "std": 30.6825,
+          "median": 48.0
+        },
+        "word_count": {
+          "mean": 9.2456,
+          "std": 5.7315,
+          "median": 9.0
+        }
+      },
+      "source": "combined train+val+test parquets under data/processed/ (classification input column: instruction)"
+    },
+    "class_count_stats": {
+      "n_classes": 27,
+      "mean": 863.9259,
+      "std": 117.4193,
+      "median": 918.0,
+      "min": 473,
+      "max": 965,
+      "source": "combined train+val+test, intent column (27 classes)"
+    },
     "splits": {
       "total_cleaned": 23326,
       "train": 17494,
@@ -149,6 +190,47 @@
       "p99": 43.0,
       "max": 79,
       "mean": 11.949415175447365
+    },
+    "text_length_stats": {
+      "n_rows": 13071,
+      "percentiles": {
+        "char_count": {
+          "p50": 46.0,
+          "p90": 104.0,
+          "p95": 145.0,
+          "p99": 215.3,
+          "max": 429.0
+        },
+        "word_count": {
+          "p50": 10.0,
+          "p90": 21.0,
+          "p95": 28.0,
+          "p99": 42.0,
+          "max": 79.0
+        }
+      },
+      "mean_std_median": {
+        "char_count": {
+          "mean": 58.1929,
+          "std": 39.4735,
+          "median": 46.0
+        },
+        "word_count": {
+          "mean": 11.7162,
+          "std": 7.6386,
+          "median": 10.0
+        }
+      },
+      "source": "combined train+val+test parquets under data/banking77/processed/ (column: text)"
+    },
+    "class_count_stats": {
+      "n_classes": 77,
+      "mean": 169.7532,
+      "std": 33.0976,
+      "median": 167.0,
+      "min": 75,
+      "max": 227,
+      "source": "combined train+val+test, label_name column (77 classes)"
     },
     "splits": {
       "train": 8793,
