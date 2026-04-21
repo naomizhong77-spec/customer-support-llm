@@ -1,0 +1,261 @@
+{
+  "bitext": {
+    "source": "bitext/Bitext-customer-support-llm-chatbot-training-dataset (HuggingFace); also mirrored via Kaggle. License: CDLA-Sharing-1.0",
+    "total_rows_raw": 26872,
+    "total_rows_after_cleaning": 23326,
+    "n_intents": 27,
+    "n_categories": 11,
+    "intent_imbalance_ratio_max_over_min": 1.05,
+    "category_imbalance_ratio_max_over_min": 6.3,
+    "text_length_stats_instruction_chars": {
+      "p50": 48.0,
+      "p90": 59.0,
+      "p95": 61.0,
+      "p99": 71.0,
+      "max": 92.0,
+      "source": "notebook 01 cell output (df_len.describe percentiles over 26,872 rows)"
+    },
+    "text_length_stats_instruction_ws_tokens": {
+      "p50": 9.0,
+      "p90": 12.0,
+      "p95": 13.0,
+      "p99": 14.0,
+      "max": 16.0,
+      "source": "notebook 01 cell output"
+    },
+    "text_length_stats_response_chars": {
+      "p50": 540.0,
+      "p90": 1059.0,
+      "p95": 1295.0,
+      "p99": 1837.0,
+      "max": 2472.0,
+      "source": "notebook 01 cell output"
+    },
+    "splits": {
+      "total_cleaned": 23326,
+      "train": 17494,
+      "val": 2332,
+      "test": 3500,
+      "train_frac": 0.75,
+      "val_frac": 0.1,
+      "test_frac": 0.15
+    },
+    "test_set_hash": "sha256:5641a8ab0fb4814b",
+    "test_set_hash_source": "pulled verbatim from every Bitext results.json; truncated form used by Bitext evaluation scripts",
+    "cleaning_operations_applied": [
+      "drop_nan_intent",
+      "dedup_on_(instruction,intent)_pair",
+      "whitespace_collapse (instruction + response)",
+      "mojibake_repair (regex before NFKC)",
+      "unicode_NFKC_normalise",
+      "category_upper_case",
+      "drop_length_outliers (instruction>500 chars, response>3000 chars)",
+      "dedup_post_normalise",
+      "hierarchy_invariant_assertion (each intent -> one category)"
+    ],
+    "cleaning_log_rows_accounting": [
+      {
+        "step": "drop_nan_intent",
+        "rows_before": 27409,
+        "rows_after": 26048,
+        "dropped": 1361,
+        "note": "target column must be present"
+      },
+      {
+        "step": "dedup_instr_intent",
+        "rows_before": 26048,
+        "rows_after": 23588,
+        "dropped": 2460,
+        "note": "keep='first'"
+      },
+      {
+        "step": "drop_length_outliers",
+        "rows_before": 23588,
+        "rows_after": 23477,
+        "dropped": 111,
+        "note": "instruction<=500ch, response<=3000ch"
+      },
+      {
+        "step": "dedup_post_normalise",
+        "rows_before": 23477,
+        "rows_after": 23326,
+        "dropped": 151,
+        "note": "remove dupes exposed by normalisation"
+      }
+    ],
+    "synthetic_errors_injected_for_demo": [
+      {
+        "class": "nan_intent",
+        "rate": "~5%",
+        "count_injected": 1344,
+        "mechanism": "set intent=np.nan at random rows"
+      },
+      {
+        "class": "dup_rows",
+        "rate": "~2%",
+        "count_injected": 537,
+        "mechanism": "sample rows and append copies"
+      },
+      {
+        "class": "mojibake",
+        "rate": "~1%",
+        "count_injected": 269,
+        "mechanism": "prepend '\u00c3\u00a9' and replace apostrophes with '\u00e2\u20ac\u2122' in response"
+      },
+      {
+        "class": "length_outlier",
+        "rate": "~1%",
+        "count_injected": 269,
+        "mechanism": "repeat instruction 10x to blow past 500-char cap"
+      },
+      {
+        "class": "case_inconsistency",
+        "rate": "~1%",
+        "count_injected": 269,
+        "mechanism": "category -> lower/title case mix"
+      },
+      {
+        "class": "ws_artefact",
+        "rate": "~2%",
+        "count_injected": 537,
+        "mechanism": "inject leading/trailing/triple-space/tab in instruction"
+      }
+    ],
+    "note": "Raw Bitext dump is pristine (0 nulls, 0 exact dupes, 0 mojibake); synthetic dirt is injected on a working copy to demonstrate cleaning, then cleaned back to a zero-defect state before stratified split."
+  },
+  "banking77": {
+    "source": "PolyAI/banking77 on HuggingFace",
+    "total_rows_raw": 13083,
+    "total_rows_after_cleaning": 13071,
+    "n_intents": 77,
+    "n_categories": null,
+    "imbalance_ratio_max_over_min": 5.3429,
+    "imbalance_ratio_source": "max_over_min on raw train split (from banking77_stats.json)",
+    "min_class_size_train_raw": 35,
+    "max_class_size_train_raw": 187,
+    "median_class_size_train_raw": 127.0,
+    "text_length_stats_chars": {
+      "p50": 47.0,
+      "p90": 109.80000000000109,
+      "p95": 151.89999999999964,
+      "p99": 220.97999999999956,
+      "max": 433,
+      "mean": 59.47375787263821
+    },
+    "text_length_stats_words": {
+      "p50": 10.0,
+      "p90": 22.0,
+      "p95": 29.0,
+      "p99": 43.0,
+      "max": 79,
+      "mean": 11.949415175447365
+    },
+    "splits": {
+      "train": 8793,
+      "val": 1199,
+      "test": 3079,
+      "train_frac_of_cleaned_hf_train": 0.8794,
+      "val_frac_of_cleaned_hf_train": 0.1199,
+      "cleaned_hf_train_rows": 9999,
+      "cleaned_hf_test_rows": 3079
+    },
+    "test_set_hash": "sha256:6b7f43ccbe394d73310fa8d23ac97cebf9ce1292e989bca5f6001c52d8e33ddc",
+    "test_set_hash_source": "outputs/metrics/banking77_test_hash.txt and every BANKING77 results.json",
+    "real_data_quality_issues": [
+      {
+        "type": "within_train_duplicates",
+        "count": 4,
+        "action": "dropped (10003 -> 9999)"
+      },
+      {
+        "type": "within_test_duplicates",
+        "count": 1,
+        "action": "dropped (3080 -> 3079)"
+      },
+      {
+        "type": "train_vs_test_leakage_whitespace_masked",
+        "count": 6,
+        "action": "dropped 6 from train"
+      },
+      {
+        "type": "val_vs_test_leakage_whitespace_masked",
+        "count": 1,
+        "action": "dropped 1 from val"
+      },
+      {
+        "type": "non_ascii_preserved_train",
+        "count": 49,
+        "action": "kept (legit currency/accents)"
+      },
+      {
+        "type": "non_ascii_preserved_test",
+        "count": 9,
+        "action": "kept"
+      },
+      {
+        "type": "length_outliers_gt300_train",
+        "count": 20,
+        "action": "flagged but retained"
+      },
+      {
+        "type": "length_outliers_gt300_test",
+        "count": 3,
+        "action": "flagged but retained"
+      }
+    ],
+    "synthetic_errors_injected_for_demo": [],
+    "top_similar_label_pairs_jaccard": [
+      {
+        "a": "card_not_working",
+        "b": "virtual_card_not_working",
+        "jaccard": 0.75
+      },
+      {
+        "a": "lost_or_stolen_card",
+        "b": "lost_or_stolen_phone",
+        "jaccard": 0.6
+      },
+      {
+        "a": "top_up_by_bank_transfer_charge",
+        "b": "top_up_by_card_charge",
+        "jaccard": 0.5714
+      },
+      {
+        "a": "automatic_top_up",
+        "b": "pending_top_up",
+        "jaccard": 0.5
+      },
+      {
+        "a": "automatic_top_up",
+        "b": "top_up_failed",
+        "jaccard": 0.5
+      },
+      {
+        "a": "automatic_top_up",
+        "b": "top_up_limits",
+        "jaccard": 0.5
+      },
+      {
+        "a": "automatic_top_up",
+        "b": "top_up_reverted",
+        "jaccard": 0.5
+      },
+      {
+        "a": "automatic_top_up",
+        "b": "verify_top_up",
+        "jaccard": 0.5
+      },
+      {
+        "a": "card_not_working",
+        "b": "contactless_not_working",
+        "jaccard": 0.5
+      },
+      {
+        "a": "card_payment_not_recognised",
+        "b": "direct_debit_payment_not_recognised",
+        "jaccard": 0.5
+      }
+    ],
+    "note": "BANKING77 is real-world dirty; no synthetic injection. Val carved off cleaned train at 12%."
+  }
+}
